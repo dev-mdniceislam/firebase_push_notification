@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pushnotification/firebase_options.dart';
 
+@pragma('vm:entry-point')
 class NotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -86,16 +87,14 @@ class NotificationService {
     String? title = notification?.title ?? data['title'] ?? "No Title";
     String? body = notification?.body ?? data['body'] ?? "No Body";
 
-    // ১. ফায়ারবেস পেলোড থেকে ইমেজের লিঙ্কটি বের করা (Notification বা Data দুই জায়গা থেকেই চেক করা হচ্ছে)
     String? imageUrl =
         notification?.android?.imageUrl ?? data['image'] ?? data['imageUrl'];
 
     AndroidNotificationDetails androidDetails;
 
-    // ২. যদি ইমেজ থাকে, তবে BigPictureStyle সেট করা হবে
     if (imageUrl != null && imageUrl.isNotEmpty) {
       try {
-        // ইমেজ ডাউনলোড করে লোকাল পাথ নেওয়া হচ্ছে
+        // download image to local path
         final String bigPicturePath = await _downloadAndSaveFile(
           imageUrl,
           'notification_big_picture.jpg',
@@ -110,16 +109,16 @@ class NotificationService {
           // এখানে ইমেজ সেট করা হচ্ছে
           styleInformation: BigPictureStyleInformation(
             FilePathAndroidBitmap(bigPicturePath),
-            largeIcon: FilePathAndroidBitmap(
-              bigPicturePath,
-            ), // নোটিফিকেশনের ডানপাশে ছোট আইকন হিসেবেও দেখাবে
+            // largeIcon: FilePathAndroidBitmap(
+            //   bigPicturePath,
+            // ), //show small image at notification right side
             contentTitle: title,
             summaryText: body,
           ),
         );
       } catch (e) {
         log("Error downloading notification image: $e");
-        // কোনো কারণে ইমেজ ডাউনলোড না হলে সাধারণ টেক্সট নোটিফিকেশন দেখাবে
+
         androidDetails = const AndroidNotificationDetails(
           'CHANNEL_ID',
           'CHANNEL_NAME',
@@ -129,7 +128,6 @@ class NotificationService {
         );
       }
     } else {
-      // ৩. যদি কোনো ইমেজ না থাকে, তবে আগের মতোই সাধারণ নোটিফিকেশন দেখাবে
       androidDetails = const AndroidNotificationDetails(
         'CHANNEL_ID',
         'CHANNEL_NAME',
@@ -144,7 +142,6 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      // iOS-এর জন্যও ইমেজ সাপোর্ট চাইলে দিতে পারেন, তবে সেটার জন্য ফ্লাটারে Notification Service Extension লাগে।
     );
 
     /// combine platform-specific settings
@@ -161,43 +158,6 @@ class NotificationService {
       notificationDetails: notificationDetails,
     );
   }
-  // static Future<void> _showFlutterNotification(RemoteMessage message) async {
-  //   RemoteNotification? notification = message.notification;
-  //   Map<String, dynamic> data = message.data;
-  //
-  //   String? title = notification?.title ?? data['title'] ?? "No Title";
-  //   String? body = notification?.body ?? data['body'] ?? "No Body";
-  //
-  //   /// Android notification config
-  //   AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-  //     'CHANNEL_ID', //must be unique
-  //     'CHANNEL_NAME',
-  //     channelDescription: "Notification channel for basic test",
-  //     priority: Priority.high,
-  //     importance: Importance.high,
-  //   );
-  //
-  //   ///IOS notification config
-  //   DarwinNotificationDetails iosDetails = const DarwinNotificationDetails(
-  //     presentAlert: true,
-  //     presentBadge: true,
-  //     presentSound: true,
-  //   );
-  //
-  //   /// combine platform-specific settings
-  //   NotificationDetails notificationDetails = NotificationDetails(
-  //     android: androidDetails,
-  //     iOS: iosDetails,
-  //   );
-  //
-  //   /// Show notification
-  //   await flutterLocalNotificationsPlugin.show(
-  //     id: 0,
-  //     title: title,
-  //     body: body,
-  //     notificationDetails: notificationDetails,
-  //   );
-  // }
 
   ///Initializing the local notification system (both android and ios)
   static Future<void> _initializeLocalNotification() async {
